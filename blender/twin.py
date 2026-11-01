@@ -15,11 +15,11 @@ def scan_empty(x=-10000.0):
     return empty("scan", x, 0, 0)
 
 
-def twin_shader(n, l, grid=2.0, edge_strength=9.0):
+def twin_shader(n, l, grid=2.0, edge_strength=7.0, radius=0.12):
     """Returns the hologram shader output: bright model edges, fine grid, faint fill."""
     bev = n.new("ShaderNodeBevel")
     bev.samples = 3
-    bev.inputs["Radius"].default_value = 0.12
+    bev.inputs["Radius"].default_value = radius
     geo = n.new("ShaderNodeNewGeometry")
     dot = n.new("ShaderNodeVectorMath")
     dot.operation = "DOT_PRODUCT"
@@ -34,7 +34,7 @@ def twin_shader(n, l, grid=2.0, edge_strength=9.0):
     lw.inputs["Blend"].default_value = 0.25
     fres = n.new("ShaderNodeMath")
     fres.operation = "MULTIPLY"
-    fres.inputs[1].default_value = 0.35
+    fres.inputs[1].default_value = 0.07
     l.new(lw.outputs["Facing"], fres.inputs[0])
 
     # Thin blueprint grid in world space.
@@ -64,7 +64,7 @@ def twin_shader(n, l, grid=2.0, edge_strength=9.0):
             lines = mx
     gridv = n.new("ShaderNodeMath")
     gridv.operation = "MULTIPLY"
-    gridv.inputs[1].default_value = 0.22
+    gridv.inputs[1].default_value = 0.14
     l.new(lines.outputs[0], gridv.inputs[0])
 
     total = n.new("ShaderNodeMath")
@@ -86,14 +86,14 @@ def twin_shader(n, l, grid=2.0, edge_strength=9.0):
 
     # Mostly clear, so machines read as see-through engineering models.
     tr = n.new("ShaderNodeBsdfTransparent")
-    tr.inputs["Color"].default_value = (0.86, 0.95, 0.9, 1)
+    tr.inputs["Color"].default_value = (0.9, 0.96, 0.93, 1)
     add = n.new("ShaderNodeAddShader")
     l.new(tr.outputs[0], add.inputs[0])
     l.new(em.outputs[0], add.inputs[1])
     return add
 
 
-def twinify(mat, scan, band=1.5, axis="X"):
+def twinify(mat, scan, band=1.5, axis="X", radius=0.12, grid=2.0, edge=7.0):
     """Wrap a material so that it turns to hologram where scan-space X is positive."""
     if mat.name in _DONE or not mat.use_nodes:
         return mat
@@ -103,7 +103,7 @@ def twinify(mat, scan, band=1.5, axis="X"):
     src = out.inputs["Surface"].links[0].from_socket if out.inputs["Surface"].links else None
     if src is None:
         return mat
-    holo = twin_shader(n, l)
+    holo = twin_shader(n, l, grid=grid, radius=radius, edge_strength=edge)
     tc = n.new("ShaderNodeTexCoord")
     tc.object = scan
     sep = n.new("ShaderNodeSeparateXYZ")
@@ -129,7 +129,7 @@ def twinify(mat, scan, band=1.5, axis="X"):
     l.new(dist.outputs[0], bandr.inputs["Value"])
     em = n.new("ShaderNodeEmission")
     em.inputs["Color"].default_value = (0.5, 1.0, 0.75, 1)
-    em.inputs["Strength"].default_value = 14.0
+    em.inputs["Strength"].default_value = 7.0
     mix2 = n.new("ShaderNodeMixShader")
     l.new(bandr.outputs[0], mix2.inputs[0])
     l.new(mix.outputs[0], mix2.inputs[1])
@@ -138,7 +138,7 @@ def twinify(mat, scan, band=1.5, axis="X"):
     return mat
 
 
-def twinify_all(scan, skip=()):
+def twinify_all(scan, skip=(), band=1.5, radius=0.12, grid=2.0, edge=7.0):
     for mat in bpy.data.materials:
         if mat.name not in skip:
-            twinify(mat, scan)
+            twinify(mat, scan, band=band, radius=radius, grid=grid, edge=edge)

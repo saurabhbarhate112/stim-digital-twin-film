@@ -1,0 +1,115 @@
+name: render
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: Parallel render jobs
+        default: "10"
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  BLENDER_VERSION: 4.5.9
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.p.outputs.shards }}
+      any: ${{ steps.p.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Only lines whose text changed reach Speechify; the rest are cached in the repo.
+      - name: Narration
+        env:
+          SPEECHIFY_API_KEY: ${{ secrets.SPEECHIFY_API_KEY }}
+        run: python tools/narrate.py
+      - id: p
+        run: |
+          python tools/timeline.py
+          python tools/ci.py plan ${{ inputs.shards || '10' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plan
+          retention-days: 2
+          path: |
+            build/timeline.json
+            build/shards.json
+
+  render:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: plan
+          path: build
+      - uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}
+      - name: Install Blender
+        run: |
+          if [ ! -x ~/blender/blender ]; then
+            mkdir -p ~/blender
+            curl -sSL "https://download.blender.org/release/Blender4.5/blender-$BLENDER_VERSION-linux-x64.tar.xz" | tar -xJ -C ~/blender --strip-components=1
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libxi6 libxkbcommon0 libgl1 libsm6 libegl1 libxrender1 >/dev/null
+      - name: Bake textures
+        run: |
+          pip install -q pillow
+          python tools/pcb_maps.py
+          python tools/textures.py
+      - name: Render shots
+        env:
+          BLENDER: /home/runner/blender/blender
+        run: python tools/ci.py render ${{ matrix.shard }}
+
+  assemble:
+    needs: [plan, render]
+    if: ${{ !cancelled() && (needs.render.result == 'success' || needs.render.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/download-artifact@v4
+        with:
+          name: plan
+          path: build
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libass9 >/dev/null
+          npm ci
+          npx playwright install --with-deps chromium-headless-shell
+      - run: python tools/ci.py fetch
+      - name: Motion graphics
+        run: node tools/composite.mjs
+      - run: python tools/ci.py finish
+      - name: Publish to a private release
+        run: |
+          TAG="film-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" --title "Film build ${GITHUB_RUN_NUMBER}" --notes "1280x720 24 fps, -14 LUFS." output/*

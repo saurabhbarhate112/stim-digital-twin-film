@@ -347,7 +347,7 @@ def studio(s, floor_color=(0.28, 0.33, 0.33, 1), key=1.0):
     floor = cyclorama(floor_color)
     area_light("key", (-12, -8, 28), (0, 0, 0), 26, 15000 * key, (1.0, 0.97, 0.93), size_y=18)
     area_light("strip", (20, 8, 11), (0, 0, 0), 3, 5200 * key, (0.9, 0.97, 1.0), size_y=44)
-    area_light("kicker", (-6, 34, 9), (0, 0, 0), 44, 3800 * key, (0.72, 1.0, 0.86), size_y=5)
+    area_light("kicker", (-6, 34, 30), (0, 0, 0), 30, 1000 * key, (0.72, 1.0, 0.86), size_y=3)
     return floor
 
 
