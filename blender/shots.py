@@ -275,6 +275,7 @@ def bead_mesh(length=8.0, r=0.16):
 
 def squeegee(ctx):
     mats, b, st = printer_scene(ctx)
+    bpy.data.objects["cut"].parent = st  # Boolean works in world space: cutters must ride with the plate.
     driver = empty("sq", 0, 0, 0)
     for mat in (mats.paste,):
         reveal(mat, driver)
@@ -304,11 +305,13 @@ def squeegee(ctx):
         for fc in fcurves(o.animation_data.action):
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
-    camera(ctx, [(0, (-0.5, -11.5, 6.8), (3.2, -1.6, 0.5)), (1, (-1.5, -11.0, 6.2), (2.6, -1.6, 0.5))], lens=50, fstop=9)
+    # Low from the side of travel, where the paste rolls ahead of the angled blade.
+    camera(ctx, [(0, (0.6, -6.9, 1.9), (3.6, -1.9, 0.5)), (1, (-1.2, -6.6, 1.7), (2.0, -1.9, 0.5))], lens=42, fstop=9)
 
 
 def wipe(ctx):
     mats, b, st = printer_scene(ctx)
+    bpy.data.objects["cut"].parent = st  # Boolean works in world space: cutters must ride with the plate.
     driver = empty("wipe", 0, 0, 0)
     dirt = lib.add_noise_bump(principled("residue", (0.11, 0.115, 0.125, 1), 0.2, 0.7), 26, 0.8, 2, 0.1)
     reveal(dirt, driver)
@@ -567,19 +570,19 @@ def oven_cut(ctx):
             for j in range(10):
                 pl = rbox(f"pl{i}{j}", 1.1, 46, 0.5, 0.04, 1, mat=mats.steel)
                 obj("slat", pl, x - zw / 2 + (j + 0.5) * zw / 10, 0, sgn * 15)
-        div = rbox(f"w{i}", 1.2, 46, 56, 0.1, 1, mat=mats.steel)
-        obj("div", div, x - zw / 2, 0, -28)
-        ctx.anchor(f"z{i + 1}", (x, -10, 16))
+        div = rbox(f"w{i}", 1.2, 18, 56, 0.1, 1, mat=mats.steel)  # Rear half only, so the camera can ride the tunnel.
+        obj("div", div, x - zw / 2, 14, -28)
+        ctx.anchor(f"z{i + 1}", (x, 8, 13.5))
     for sgn in (-1, 1):
         obj("chain", rbox("chain", w + 40, 1.0, 1.0, mat=mats.rubber), 0, sgn * 3.9, -0.5)
         obj("rail", rbox("crail", w + 40, 1.4, 2.4, 0.2, 1, mat=mats.alu), 0, sgn * 4.9, -3)
     speed = 8.0
     dur = ctx.frames / 24
-    for i in range(30):
-        x0 = -520 + i * 34
+    for i in range(60):
+        x0 = -520 + i * 15
         inst = instance(coll, f"b{i}", x0, 0, 0.3)
         key_linear(inst, s, [(1, (x0, 0, 0.3)), (ctx.frames, (x0 + speed * dur, 0, 0.3))])
-    camera(ctx, [(0, (-30, -80, 25), (-16, 0, 1)), (1, (130, -76, 23), (144, 0, 1))], lens=50, fstop=0)
+    camera(ctx, [(0, (70, -19, 11), (88, 2, 1)), (1, (150, -19, 11), (168, 2, 1))], lens=24, fstop=0)
 
 
 def melt(ctx):
@@ -633,11 +636,11 @@ def melt(ctx):
 
     pads = []
     for sx in (-1, 1):
-        obj("pad", rbox("pad", 1.7 * k * 2, 2.0 * k * 2, 0.06, 0.01, 1, mat=mats.gold), sx * 1.7, 0, 0)
-        dep = rbox("dep", 3.0, 3.5, 0.5, 0.04, 2, z0=0, mat=m)
-        o = obj("dep", dep, sx * 1.7, 0, 0.06)
-        fil = fillet_big(m)
-        f = obj("fil", fil, sx * 2.72, 0, 0.06, 0 if sx > 0 else 180)
+        obj("pad", rbox("pad", 2.7, 3.6, 0.06, 0.01, 1, mat=mats.gold), sx * 3.0, 0, 0)
+        dep = rbox("dep", 2.4, 3.3, 0.5, 0.04, 2, z0=0, mat=m)
+        o = obj("dep", dep, sx * 3.0, 0, 0.06)
+        fil = shot_fillet_concave(m)
+        f = obj("fil", fil, sx * 3.19, 0, 0.06, 0 if sx > 0 else 180)
         kprop(ctx, o, "melt", 0, 0)
         kprop(ctx, o, "melt", 0.36, 0)
         kprop(ctx, o, "melt", 0.5, 1)
@@ -657,6 +660,15 @@ def melt(ctx):
     kf(ctx, part, 0.72, loc=(0, 0, 0.12), rot=(0, 0, 0))
     camera(ctx, [(0, (8.5, -15.5, 5.6), (0, 0, 0.5)), (1, (7.2, -14.0, 4.6), (0, 0, 0.5))], lens=60, fstop=8.0)
     ctx.s.frame_end = ctx.frames
+
+
+def shot_fillet_concave(mat):
+    """Molten solder climbs the terminal in a concave meniscus: shallow toe, steep at the part."""
+    prof = [(0.0, 0.0)]
+    for i in range(20):
+        t = i / 19
+        prof.append((0.95 * (1 - t), 0.02 + 1.2 * t ** 2.4))
+    return loft("concave", prof[::-1], 3.0, mat)
 
 
 def fillet_big(mat):
@@ -913,19 +925,33 @@ def line_scene(ctx):
     return mats, li
 
 
+def shot_snug_conveyor():
+    """Bring the rails in so the chains actually carry a 7 cm wide board by its edges."""
+    for o in bpy.data.objects:
+        if o.name.startswith("rail"):
+            o.location.y = math.copysign(4.4, o.location.y)
+        elif o.name.startswith("chain"):
+            o.location.y = math.copysign(3.3, o.location.y)
+
+
 def line_wide(ctx):
     line_scene(ctx)
+    shot_snug_conveyor()
     camera(ctx, [(0, (-760, -330, 175), (-150, 0, 95)), (1, (-640, -340, 165), (-40, 0, 95))], lens=34, fstop=0)
 
 
 def line_track(ctx):
     mats, li = line_scene(ctx)
-    z = BELT_Z + 2
-    camera(ctx, [(0, (-890, -40, 112), (-820, 0, z)), (1, (-842, -40, 110), (-772, 0, z))], lens=45, fstop=5.6)
+    shot_snug_conveyor()
+    # Beside the exposed infeed conveyor, travelling at board speed.
+    z = BELT_Z + 0.5
+    d = 16.0 * ctx.frames / 24
+    camera(ctx, [(0, (-918, -19, 110), (-888, 0, z)), (1, (-918 + d, -19, 110), (-888 + d, 0, z))], lens=55, fstop=8)
 
 
 def ordinary(ctx):
     line_scene(ctx)
+    shot_snug_conveyor()
     camera(ctx, [(0, (-40, -470, 215), (-130, 0, 100)), (1, (-170, -460, 200), (-260, 0, 100))], lens=30, fstop=0)
 
 
@@ -940,6 +966,7 @@ def twin_setup(ctx):
 
 def twin_reveal(ctx):
     scan = twin_setup(ctx)
+    shot_snug_conveyor()
     kf(ctx, scan, 0, loc=(1400, 0, 0))
     kf(ctx, scan, 0.08, loc=(1400, 0, 0))
     kf(ctx, scan, 0.9, loc=(-1000, 0, 0))
@@ -949,6 +976,7 @@ def twin_reveal(ctx):
 
 def twin_orbit(ctx):
     scan = twin_setup(ctx)
+    shot_snug_conveyor()
     scan.location.x = -1500
     camera(ctx, [(0, (-560, -430, 190), (20, 0, 95)), (1, (40, -380, 250), (160, 0, 95))], lens=32, fstop=0)
 
@@ -963,11 +991,13 @@ def plate_chip(ctx):
 
 def plate_line(ctx):
     line_scene(ctx)
+    shot_snug_conveyor()
     camera(ctx, [(0, (-300, -420, 200), (40, 0, 90)), (1, (-300, -420, 200), (40, 0, 90))], lens=30, fstop=0)
 
 
 def plate_twin(ctx):
     twin_setup(ctx).location.x = -1500
+    shot_snug_conveyor()
     camera(ctx, [(0, (-300, -420, 200), (40, 0, 90)), (1, (-300, -420, 200), (40, 0, 90))], lens=30, fstop=0)
 
 
@@ -983,4 +1013,5 @@ def plate_oven(ctx):
 SHOTS = {k: v for k, v in globals().items() if callable(v) and getattr(v, "__module__", "") == __name__
          and k not in ("stage", "camera", "kf", "kprop", "object_prop", "reveal", "stencil_mesh", "printer_scene",
                        "bead_mesh", "micro_scene", "nozzle_tool", "pnp_head", "tape_reel", "pnp_scene", "part_0603",
-                       "fillet_big", "aoi_head", "xray_mats", "xray_board", "line_scene", "twin_setup", "Ctx", "_box")}
+                       "fillet_big", "aoi_head", "xray_mats", "xray_board", "line_scene", "twin_setup", "Ctx", "_box",
+                       "shot_snug_conveyor", "shot_fillet_concave")}

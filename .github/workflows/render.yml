@@ -104,6 +104,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg libass9 >/dev/null
           npm ci
+          pip install -q pillow
           npx playwright install --with-deps chromium-headless-shell
       - run: python tools/ci.py fetch
       - name: Motion graphics

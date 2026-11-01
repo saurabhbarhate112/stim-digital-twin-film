@@ -55,7 +55,8 @@ def manifest():
     base = shared_hash()
     # Helpers are hashed with everything, shot functions individually: a tweak to one shot re-renders one shot.
     shots = {s["src"]: s for s in tl["shots"] if s["kind"] != "stock"}
-    helpers = "".join(v for k, v in sorted(fns.items()) if k not in shots)
+    # Helpers named shot_* are used by named shots only; those shots' own text changes when they call one.
+    helpers = "".join(v for k, v in sorted(fns.items()) if k not in shots and not k.startswith("shot_"))
     items = {}
     for s in tl["shots"]:
         if s["kind"] == "stock" or s["src"] in items:
@@ -192,6 +193,24 @@ def finish():
         sh("ffmpeg", "-y", "-v", "error", "-i", BUILD / "picture.mp4", "-i", BUILD / "audio.wav", "-vf", vf, *enc, dest / name, cwd=ROOT)
         print(out("ffprobe", "-v", "error", "-show_entries", "format=duration,size,bit_rate:stream=codec_name,width,height,r_frame_rate",
                   "-of", "compact", dest / name))
+    review(tl, dest / "stim-digital-twin-720p-captioned.mp4", dest)
+
+
+def review(tl, video, dest):
+    """Small contact sheets of every shot, so the film can be checked without downloading it."""
+    from PIL import Image
+    shots = tl["shots"]
+    frames = BUILD / "review"
+    frames.mkdir(exist_ok=True)
+    cols, w, h = 5, 384, 216
+    for part, group in enumerate((shots[:25], shots[25:]), 1):
+        sheet = Image.new("RGB", (cols * w, ((len(group) + cols - 1) // cols) * h))
+        for i, s in enumerate(group):
+            f = frames / f"{s['id']}.jpg"
+            t = (s["start"] + s["frames"] * 0.72) / tl["fps"]
+            sh("ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", video, "-frames:v", 1, f)
+            sheet.paste(Image.open(f).resize((w, h)), (i % cols * w, i // cols * h))
+        sheet.save(dest / f"review-sheet-{part}.jpg", quality=84)
 
 
 if __name__ == "__main__":

@@ -255,7 +255,7 @@ const O = {
     reveal('One that doesn’t physically exist.', 70, 166, g.cue('one'), { size: 30, color: C.twin, weight: 600 });
   },
   cockpit() {},
-  cockpit2() { reveal('Mistakes cost nothing here.', W / 2, 620, 6, { size: 42, align: 'center' }); },
+  cockpit2() {},
   twin_orbit() {
     reveal('DIGITAL TWIN', W / 2, 340, 8, { size: 86, align: 'center', weight: 800 });
     reveal('A flight simulator for a factory', W / 2, 392, 22, { size: 28, align: 'center', color: C.twin, weight: 500 });
@@ -291,7 +291,7 @@ const O = {
       const v = i ? (g.f < ch + 9 ? 245 : val) : val;
       text(v.toFixed(0) + ' °C', x + 30, 370, { size: 76, weight: 800, alpha: pin(4 + i * 8), color: g.f > ch + (i ? 9 : 0) && g.f < ch + 40 + (i ? 9 : 0) ? C.amber : '#fff' });
     });
-    if (g.f > g.cue('and')) reveal('And what it learns flows back.', W / 2, 520, g.cue('and'), { size: 36, align: 'center' });
+    if (g.f > g.cue('and')) reveal('Two-way link', W / 2, 520, g.cue('and'), { size: 36, align: 'center', color: C.twin });
   },
   line_track() { stepper(-1); },
   paste_spheres() {
@@ -519,7 +519,7 @@ const O = {
     }
     illustrative(70, 664);
   },
-  inspector() { reveal('A trained inspector still decides', 70, 600, 6, { size: 36 }); reveal('Judged against IPC-A-610 workmanship criteria', 70, 638, 14, { size: 20, weight: 500 }); },
+  inspector() { kicker('JUDGED AGAINST IPC-A-610 WORKMANSHIP CRITERIA', 34, 34, { at: 6 }); },
   q_twin() {
     plate({ z0: 1.0, z1: 1.1 });
     const qs = [['Oven peak +5 °C?', 110, 'raise'], ['New paste supplier?', 760, 'change']];
