@@ -211,6 +211,17 @@ function logRow(x, y, w, key, val, tone, alpha = 1) {
   c.restore();
 }
 
+// Soft dark band behind type sitting on busy or bright frames.
+function scrim(y, h, alpha = .62) {
+  const g2 = c.createLinearGradient(0, y, 0, y + h);
+  g2.addColorStop(0, 'rgba(4,20,14,0)');
+  g2.addColorStop(.3, `rgba(4,20,14,${alpha})`);
+  g2.addColorStop(.7, `rgba(4,20,14,${alpha})`);
+  g2.addColorStop(1, 'rgba(4,20,14,0)');
+  c.fillStyle = g2;
+  c.fillRect(0, y, W, h);
+}
+
 const flash = (start, dur, color = '#fff', peak = .9) => {
   const t = (g.f - start) / dur;
   if (t < 0 || t > 1) return;
@@ -251,14 +262,16 @@ const O = {
     reveal("that hasn't happened yet?", W / 2, 400, 14, { size: 54, align: 'center', color: C.twin });
   },
   twin_reveal() {
+    scrim(40, 180, .6 * pin(g.cue('second'), 12));
     reveal('A second factory.', 70, 112, g.cue('second'), { size: 50 });
-    reveal('One that doesn’t physically exist.', 70, 166, g.cue('one'), { size: 30, color: C.twin, weight: 600 });
+    reveal('One that doesn’t physically exist.', 70, 166, g.cue('one'), { size: 30, weight: 600 });
   },
   cockpit() {},
   cockpit2() {},
   twin_orbit() {
+    scrim(240, 200, .66 * pin(6, 12));
     reveal('DIGITAL TWIN', W / 2, 340, 8, { size: 86, align: 'center', weight: 800 });
-    reveal('A flight simulator for a factory', W / 2, 392, 22, { size: 28, align: 'center', color: C.twin, weight: 500 });
+    reveal('A flight simulator for a factory', W / 2, 392, 22, { size: 28, align: 'center', weight: 500 });
   },
   board_twin() {
     text('REAL BOARD', 90, 640, { size: 18, font: MONO, weight: 600, alpha: pin(6), shadow: 8 });
@@ -492,6 +505,7 @@ const O = {
   },
   wipe() { kicker('STENCIL WIPED', 34, 34, { at: 2 }); },
   clean_deposit() {
+    scrim(240, 230, .6 * pin(2, 10));
     reveal('Bad batch', W / 2, 340, 2, { size: 72, align: 'center', weight: 800 });
     const p = pin(g.cue('never') , 12);
     c.strokeStyle = C.red; c.lineWidth = 8; c.beginPath(); c.moveTo(W / 2 - 190, 316); c.lineTo(W / 2 - 190 + 380 * p, 316); c.stroke();
@@ -618,17 +632,17 @@ const O = {
     text('knows why', 230, 608, { size: 30, weight: 800, color: C.twin, alpha: pin(12) });
   },
   nist() {
-    plate({ z0: 1.0, z1: 1.12, shade: .42 });
+    plate({ z0: 1.0, z1: 1.12, shade: .66 });
     kicker('NIST · DIGITAL TWINS RESEARCH PROGRAM', 34, 34, { at: 4 });
     const a = g.cue('potential');
     reveal('Standards are still young', W / 2, 230, 8, { size: 40, align: 'center', weight: 600 });
     reveal('Low tens of billions', W / 2, 350, a, { size: 78, align: 'center', weight: 800, color: C.twin });
     reveal('of dollars: potential impact of digital twins in manufacturing', W / 2, 402, a + 14, { size: 22, align: 'center', weight: 500 });
-    text('Source: D. Thomas, Economics of Digital Twins, NIST, 2024', W / 2, 618, { size: 14, weight: 500, align: 'center', alpha: pin(a + 20), shadow: 6 });
+    text('Source: D. Thomas, Economics of Digital Twins, NIST, 2024', W / 2, 618, { size: 15, weight: 500, align: 'center', alpha: pin(a + 20), shadow: 6, color: '#E9F5EE' });
   },
   ordinary() {},
   no_items() {
-    plate({ z0: 1.0, z1: 1.1 });
+    plate({ z0: 1.0, z1: 1.1, shade: .5 });
     const ws = [['No scrap.', 'scrap'], ['No alarm.', 'alarm'], ['No investigation.', 'investigation']];
     ws.forEach(([t, w], i) => reveal(t, 90, 230 + i * 90, g.cue(w) - 8, { size: 58, weight: 800, shadow: 18 }));
     reveal('Just an ordinary shift.', 90, 560, g.cue('ordinary') - 5, { size: 38, weight: 500, color: C.twin });

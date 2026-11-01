@@ -14,7 +14,7 @@ The drift, schedule, reject and inspection graphics repeat the article's example
 |---|---|---|
 | `assets/stock/cockpit*.mp4` | https://www.pexels.com/video/38132855/ | confirm on the clip page |
 | `assets/stock/inspector.mp4` | https://www.pexels.com/video/2376866/ | Video Kickstarter (read from search data, confirm) |
-| `assets/stock/engineer.mp4` | https://www.pexels.com/video/39014670/ | confirm on the clip page |
+| `assets/stock/engineer.mp4` | https://www.pexels.com/video/31016926/ | confirm on the clip page |
 
 ## Sound
 - Voice: Speechify, `hugh_32`, model `simba-3.5`.

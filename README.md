@@ -8,7 +8,7 @@ A four-minute, 720p documentary built from code: procedural Blender 3D, canvas m
 gh workflow run render.yml
 ```
 
-The finished MP4s and captions appear on a private release named `film-<run>`.
+The finished MP4s and captions appear on a release named `film-<run>`, with small review sheets of every shot.
 
 `SPEECHIFY_API_KEY` is only needed if a line of `script/narration.json` changes. Existing narration is cached in `assets/vo`. To set it:
 

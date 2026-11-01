@@ -110,7 +110,7 @@ jobs:
       - name: Motion graphics
         run: node tools/composite.mjs
       - run: python tools/ci.py finish
-      - name: Publish to a private release
+      - name: Publish release
         run: |
           TAG="film-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" --title "Film build ${GITHUB_RUN_NUMBER}" --notes "1280x720 24 fps, -14 LUFS." output/*
