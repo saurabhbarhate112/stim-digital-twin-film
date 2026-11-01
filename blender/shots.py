@@ -138,7 +138,7 @@ def board_twin(ctx):
     scan = scan_empty()
     twinify_all(scan, band=0.08, radius=0.008, grid=0.5, edge=2.2)
     # Scan sweeps the board: the left half stays real, the right becomes its model.
-    kf(ctx, scan, 0, loc=(-6.5, 0, 0))
+    kf(ctx, scan, 0, loc=(6.5, 0, 0))
     kf(ctx, scan, 0.75, loc=(0, 0, 0))
     kf(ctx, scan, 1, loc=(0, 0, 0))
     ctx.s.cycles.transparent_max_bounces = 10
@@ -203,7 +203,7 @@ def heatmap(ctx):
     l.new(mx.outputs[0], out.inputs["Surface"])
     kprop(ctx, b.body, "heat", 0, 0.05)
     kprop(ctx, b.body, "heat", 1, 1.25)
-    ctx.anchor("copper", (1.0, 1.2, 0.45))
+    ctx.anchor("copper", (3.2, 1.6, 0.45))
     camera(ctx, [(0, (6.0, -11.0, 11.0), (0, 0, 0.4)), (1, (4.0, -10.0, 11.5), (0, 0, 0.4))], lens=55, fstop=11)
 
 
@@ -720,7 +720,7 @@ def aoi_cam(ctx):
     camera(ctx, [(0, (7.6, -8.6, 2.6), (3.0, -1.8, 1.4)), (1, (7.0, -8.2, 2.4), (3.2, -1.9, 1.3))], lens=50, fstop=8.0)
 
 
-XRAY_DENSITY = {"gold": 0.6, "tin": 0.55, "solder": 0.3, "chrome": 0.6, "alu": 0.86, "epoxy": 0.97, "ceramic": 0.8,
+XRAY_DENSITY = {"etch": 1.0, "gold": 0.6, "tin": 0.55, "solder": 0.3, "chrome": 0.6, "alu": 0.86, "epoxy": 0.97, "ceramic": 0.8,
                 "res_body": 0.92, "soldermask": 0.985, "fr4": 0.985, "paste": 0.5, "copperx": 0.72, "wire": 0.5, "die": 0.74}
 
 
@@ -940,10 +940,10 @@ def twin_setup(ctx):
 
 def twin_reveal(ctx):
     scan = twin_setup(ctx)
-    kf(ctx, scan, 0, loc=(-900, 0, 0))
-    kf(ctx, scan, 0.08, loc=(-900, 0, 0))
-    kf(ctx, scan, 0.92, loc=(1400, 0, 0))
-    kf(ctx, scan, 1, loc=(1400, 0, 0))
+    kf(ctx, scan, 0, loc=(1400, 0, 0))
+    kf(ctx, scan, 0.08, loc=(1400, 0, 0))
+    kf(ctx, scan, 0.9, loc=(-1000, 0, 0))
+    kf(ctx, scan, 1, loc=(-1000, 0, 0))
     camera(ctx, [(0, (-720, -420, 190), (-120, 0, 95)), (1, (-560, -430, 190), (20, 0, 95))], lens=32, fstop=0)
 
 

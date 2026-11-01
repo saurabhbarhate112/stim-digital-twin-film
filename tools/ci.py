@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 TAG = "render-cache"
 BLENDER = os.environ.get("BLENDER", "blender")
-SAMPLES = 8
+SAMPLES = 6
 PLATE_SAMPLES = 24
 # Fast mechanical motion gets every frame; slow camera moves can interpolate cleanly.
 EVERY_FRAME = {"pnp_macro", "nozzle_drop", "squeegee", "wipe", "test_probe", "melt"}
